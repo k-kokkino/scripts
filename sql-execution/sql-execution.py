@@ -15,7 +15,7 @@ SQL_DRIVER = 'ODBC Driver 17 for SQL Server'
 
 DEFAULT_PREFIX_LIST = ['Prefix1', 'Prefix2']
 FILE_PREFIX_SEPARATOR = r'_'
-ALLOWED_SUFFIX_TUPLE = (".txt", ".sql")
+ALLOWED_SUFFIX_TUPLE = ('.txt', '.sql')
 PROCESSED_FILE_SUFFIX = '.done'
 NO_ERRORS_MSG = 'No errors\n'
 
@@ -44,7 +44,7 @@ def execute_sql_files(file_prefix, working_directory, simulation=True):
                         file_process_start = time.time()
                         file_path = os.path.join(root, file)
                         base_name = os.path.basename(file_path)
-                        print(f"Executing SQL statements from {base_name}...")
+                        print(f'{"Simulating" if simulation else "Executing"} SQL statements from {base_name}...')
                         with open(file_path, 'r') as sql_file:
                             sql_statements = sql_file.readlines()
                         line = 0
@@ -78,16 +78,19 @@ def execute_sql_files(file_prefix, working_directory, simulation=True):
                 if simulation:
                     connection.rollback()
                     if has_error:
+                        print(f"Errors occurred during simulation, check {error_file_name} for details.", file=sys.stderr)
                         sys.exit(1)
                     else:
                         error_file_write(NO_ERRORS_MSG)
                         execute_sql_files(file_prefix, working_directory, simulation=False)
                 else:
-                    if not has_error:
+                    if has_error:
+                        print(f"Errors occurred, check {error_file_name} for details.", file=sys.stderr)
+                    else:
                         error_file_write(NO_ERRORS_MSG)
             except Exception as e:
                 connection.rollback()
-                print(f"Transaction rolled back. Error details: {e}", file=sys.stderr)
+                print(f"Transaction rolled back.", file=sys.stderr)
                 raise
 
 
@@ -105,16 +108,16 @@ if __name__ == "__main__":
 
         expanded_directory = os.path.expanduser(args.directory)
         if not os.path.exists(expanded_directory):
-            print(f"Error: Directory '{expanded_directory}' does not exist.")
+            print(f"Error: Directory '{expanded_directory}' does not exist.", file=sys.stderr)
             sys.exit(1)
         if not os.path.isdir(expanded_directory):
-            print(f"Error: '{expanded_directory}' is not a directory.")
+            print(f"Error: '{expanded_directory}' is not a directory.", file=sys.stderr)
             sys.exit(1)
 
         for prefix in args.prefixes:
             execute_sql_files(prefix, expanded_directory)
     except Exception as e:
-        print(f"An error occurred. Error details: {e}", file=sys.stderr)
+        print(f"An error occurred. Exception details: {e}", file=sys.stderr)
         sys.exit(1)
     finally:
         print(f"\nTotal Elapsed: {round(time.time() - start, 2)} seconds.")
